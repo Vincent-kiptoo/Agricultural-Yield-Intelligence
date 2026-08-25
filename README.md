@@ -88,6 +88,18 @@ The project evaluated several regression approaches.
 
 The experiments demonstrated that the dataset contains substantial nonlinear structure, making tree-based ensemble methods particularly effective.
 
+## Model Performance Comparison
+
+| Model | RMSE | R² |
+|---|---:|---:|
+| OLS / Linear Regression | 0.0678 | 0.6553 |
+| RidgeCV | 0.0678 | 0.6552 |
+| LassoCV | 0.0699 | 0.6333 |
+| Polynomial Regression | 0.0589 | 0.7396 |
+| Decision Tree | 0.0322 | 0.9223 |
+| RandomForest | 0.0208 | 0.9674 |
+| GradientBoostingRegressor | 0.0148 | 0.9836 |
+| StackingRegressor | 0.0218 | 0.9643 |
 
 ## Final Model
 
