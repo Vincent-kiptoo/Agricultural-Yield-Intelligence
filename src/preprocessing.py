@@ -54,29 +54,19 @@ class ModelPreprocessors:
         self.cat_features = self.X_train.select_dtypes(include=["str"]).columns.tolist()
         return self.num_features, self.cat_features
 
-    def feature_transformer(self) -> ColumnTransformer:
-        self.preprocessor = ColumnTransformer(
-            transformers=[
-                ("num", "passthrough", self.num_features),
-                ("cat", OneHotEncoder(handle_unknown="ignore"), self.cat_features)
-            ]
+    def prepare_data(self):
+        """Prepare data for model pipelines."""
+
+        self.load_data()
+        self.X_y_features()
+        self.X_y_train_test_split()
+        self.get_feature_types()
+
+        return (
+            self.X_train,
+            self.X_test,
+            self.y_train,
+            self.y_test,
+            self.num_features,
+            self.cat_features
         )
-        return self.preprocessor
-
-    def model_pipeline(self) -> Pipeline:
-        self.pipeline = Pipeline(
-            steps=[
-                ("preprocessor", self.preprocessor),
-                ("model", DecisionTreeRegressor())
-            ]
-        )
-        self.logger.info("The model pipeline is ready "
-        "for fitting and predicting")
-        return self.pipeline
-
-    
-
-
-
-
-
