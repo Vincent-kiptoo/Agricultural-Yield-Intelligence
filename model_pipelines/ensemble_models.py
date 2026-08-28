@@ -70,14 +70,9 @@ class EnsembleStacking:
         stacking_model = StackingRegressor(
 
                     estimators=estimators,
-
                     final_estimator=Ridge(),
-
                     cv=5,
-
                     n_jobs=2,
-
-                    **stacking_params
-                )
+                    **stacking_params                )
 
         return stacking_model
