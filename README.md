@@ -1,8 +1,6 @@
 # Yield Intelligence: Gradient Boosting for Agricultural Yield Prediction
 
-An end-to-end machine learning project for predicting **Standard Yield** from agricultural, environmental, geographical, soil, weather, and crop-related features.
-
-The project explores the complete machine learning workflow, from data preparation and exploratory analysis to model development, hyperparameter tuning, diagnostics, interpretation, and model deployment.
+Yield Intelligence is a machine learning project that uses agricultural, environmental, geographical, soil, weather, and crop-related data to estimate Standard Yield. The project is designed to support farmers and agricultural decision-makers with an early, data-driven estimate of expected production, helping inform resource and production planning.
 
 
 ## Project Overview
