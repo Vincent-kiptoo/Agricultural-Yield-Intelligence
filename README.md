@@ -1,177 +1,123 @@
-# Yield Intelligence: Gradient Boosting for Agricultural Yield Prediction
+# Agricultural Yield Intelligence
 
-Yield Intelligence is a machine learning project that uses agricultural, environmental, geographical, soil, weather, and crop-related data to estimate Standard Yield. The project is designed to support farmers and agricultural decision-makers with an early, data-driven estimate of expected production, helping inform resource and production planning.
+**An end-to-end machine learning system for agricultural yield prediction** covering data engineering, statistical modelling, ensemble learning, model evaluation, interpretability, and deployment.
 
+Agricultural productivity depends on a web of interacting environmental, geographical, soil, weather, and crop factors. This project investigates those relationships and builds a model that estimates **Standard Yield**, with the goal of giving farmers and agricultural decision-makers an early, data-driven number to plan around.
 
-## Project Overview
+This project uses synthetic agricultural data and is intended to demonstrate an end-to-end machine learning workflow. The reported performance should not be interpreted as evidence of performance on real world agricultural data.
 
-Agricultural productivity is influenced by multiple interacting environmental and geographical factors. The objective of this project is to investigate these relationships and develop a machine learning model capable of accurately predicting Standard Yield.
+![Status](https://img.shields.io/badge/status-active%20development-yellow)
+![Model](https://img.shields.io/badge/model-Gradient%20Boosting-blue)
+![R²](https://img.shields.io/badge/R²-0.984-brightgreen)
+![Framework](https://img.shields.io/badge/API-FastAPI-009688)
 
-The project began with statistical and exploratory analysis before progressing through increasingly complex regression models, ending with a tuned Gradient Boosting Regressor as the final selected model.
+## Table of Contents
 
+- [Objectives](#objectives)
+- [Workflow](#workflow)
+- [Model Comparison](#model-comparison)
+- [Final Model](#final-model)
+- [Model Diagnostics](#model-diagnostics)
+- [Debugging Highlights](#debugging-highlights)
+- [Feature Importance](#feature-importance)
+- [Model Persistence & Deployment](#model-persistence--deployment)
+- [Repository Structure](#repository-structure)
+- [Engineering Practices](#engineering-practices)
+- [Project Status](#project-status)
+- [Key Findings](#key-findings)
+- [What This Project Taught Me](#what-this-project-taught-me)
+
+---
 
 ## Objectives
 
-The project aims to:
+- Understand which factors drive Standard Yield, and how strongly
+- Investigate linear vs. nonlinear relationships in the data
+- Establish baseline regression models, then beat them with tree-based ensembles
+- Tune hyperparameters and diagnose residuals rather than trusting R² alone
+- Interpret feature importance without overclaiming causality
+- Package preprocessing + model as one reusable, serializable pipeline
+- Serve the model as a prediction API, moving toward full deployment
 
-* Understand the factors associated with Standard Yield.
-* Investigate linear and nonlinear relationships in the data.
-* Establish baseline regression models.
-* Develop and compare nonlinear tree-based models.
-* Optimize model hyperparameters.
-* Diagnose model residuals and potential sources of error.
-* Interpret model feature importance.
-* Build reusable preprocessing and modeling pipelines.
-* Save the final trained model as a reusable artifact.
-* Deploy the model as a prediction service.
+---
 
+## Workflow
 
-## Machine Learning Workflow
-
-```text
-Data Ingestion
-      ↓
-Data Processing
-      ↓
-Exploratory Data Analysis
-      ↓
-Feature Analysis
-      ↓
-Train/Test Split
-      ↓
-Preprocessing Pipeline
-      ↓
-Baseline Models
-      ↓
-Polynomial Regression
-      ↓
-Decision Tree
-      ↓
-Random Forest
-      ↓
-Gradient Boosting
-      ↓
-Stacking
-      ↓
-Hyperparameter Tuning
-      ↓
-Model Comparison
-      ↓
-Residual Diagnostics
-      ↓
-Feature Importance
-      ↓
-Final Model
-      ↓
-Model Persistence
-      ↓
-Deployment
+```
+Data Ingestion → Data Processing → EDA → Feature Analysis → Train/Test Split → Preprocessing Pipeline → Baseline Models → Polynomial Regression
+      → Decision Tree → Random Forest → Gradient Boosting → Stacking → Hyperparameter Tuning → Model Comparison → Residual Diagnostics
+      → Feature Importance → Final Model → Persistence → Inference → API Serving → Testing → Containerization → Cloud Deployment
 ```
 
+---
 
-## Models Evaluated
+## Model Comparison
 
-The project evaluated several regression approaches.
-
-| Model                       | Purpose                              |
-| --------------------------- | ------------------------------------ |
-| Linear Regression           | Baseline                             |
-| Ridge Regression            | Regularized linear baseline          |
-| Lasso Regression            | Regularization and feature selection |
-| Polynomial Regression       | Capture nonlinear relationships      |
-| Decision Tree Regressor     | Nonlinear tree-based model           |
-| Random Forest Regressor     | Bagging ensemble                     |
-| Gradient Boosting Regressor | Boosting ensemble                    |
-| Stacking Regressor          | Combine multiple models              |
-
-The experiments demonstrated that the dataset contains substantial nonlinear structure, making tree-based ensemble methods particularly effective.
-
-## Model Performance Comparison
+Eight regression approaches were evaluated, from linear baselines through boosted ensembles — with a clear nonlinear signal in the data favoring tree-based methods.
 
 | Model | RMSE | R² |
 |---|---:|---:|
-| OLS / Linear Regression | 0.0678 | 0.6553 |
-| RidgeCV | 0.0678 | 0.6552 |
-| LassoCV | 0.0699 | 0.6333 |
+| Linear Regression (OLS) | 0.0678 | 0.6553 |
+| Ridge (RidgeCV) | 0.0678 | 0.6552 |
+| Lasso (LassoCV) | 0.0699 | 0.6333 |
 | Polynomial Regression | 0.0589 | 0.7396 |
 | Decision Tree | 0.0322 | 0.9223 |
-| RandomForest | 0.0208 | 0.9674 |
-| GradientBoostingRegressor | 0.0148 | 0.9836 |
-| StackingRegressor | 0.0218 | 0.9643 |
+| Random Forest | 0.0208 | 0.9674 |
+| **Gradient Boosting (final)** | **0.0148** | **0.9836** |
+| Stacking Regressor | 0.0218 | 0.9643 |
+
+---
 
 ## Final Model
 
-The final selected model is a **Gradient Boosting Regressor**.
+**Gradient Boosting Regressor**, tuned and wrapped in a scikit-learn `Pipeline` alongside preprocessing:
 
-After hyperparameter tuning, the selected configuration was:
-
-```text
-n_estimators       = 661
-learning_rate      = 0.168307
-max_depth          = 4
-min_samples_split  = 18
-min_samples_leaf   = 14
-subsample          = 0.865009
+```
+Raw Features → ColumnTransformer (numeric passthrough + one-hot categoricals) → Gradient Boosting Regressor → Standard Yield Prediction
 ```
 
-### Performance
+**Tuned hyperparameters:**
 
-```text
-RMSE = 0.0148
-R²   = 0.9836
-```
+| Parameter | Value |
+|---|---|
+| `n_estimators` | 661 |
+| `learning_rate` | 0.168307 |
+| `max_depth` | 4 |
+| `min_samples_split` | 18 |
+| `min_samples_leaf` | 14 |
+| `subsample` | 0.865009 |
+| `random_state` | 42 |
 
-The model explains approximately **98.4% of the variation in Standard Yield** on the evaluation data. Standard Yield is [normalized to a 0–1 scale / measured in <units> — confirm and fill in], so the RMSE above should be interpreted relative to that scale rather than as an absolute error in raw yield units.
+**Performance:** RMSE = 0.0148, R² = 0.9836 — the model explains ~98.4% of the variance in Standard Yield on held-out data.
 
+> Standard Yield is scaled to 0–1, so RMSE reads relative to that scale, not as a raw-unit error.
+
+---
 
 ## Model Diagnostics
 
-Model evaluation was not limited to RMSE and R².
+High R² doesn't earn trust on its own — residuals were checked for bias, distribution, variance, normality, heteroscedasticity, extreme errors, and consistency across crop types.
 
-Residual diagnostics were performed to investigate:
+- **Mean residual:** ≈ −0.00048 — negligible overall bias
+- **Breusch-Pagan test:** p = 0.0697 — not significant at 5%, but close enough to keep monitoring
+- Larger errors observed in the distribution tails and unevenly across certain crop types
 
-* Prediction bias
-* Residual distribution
-* Residual variance
-* Normality behavior
-* Heteroscedasticity
-* Extreme prediction errors
-* Error differences across crop types
-
-The mean residual was approximately:
-
-```text
--0.00048
-```
-
-indicating very little overall prediction bias.
-
-The Breusch-Pagan test produced:
-
-```text
-p-value = 0.0697
-```
-
-Therefore, heteroscedasticity was not statistically significant at the 5% significance level, although the result is close enough to the threshold to warrant continued monitoring.
-
-The model also showed some larger errors in the tails of the residual distribution and uneven error rates across certain crop types.
-
+---
 
 ## Debugging Highlights
 
-The code audit phase surfaced two correctness bugs that were caught before they could distort downstream results:
+Two correctness bugs were caught during code audit, before they could distort results:
 
-* **Whitespace-ordering bug in `apply_correction`** — the correction mapping was applied before crop-name strings were stripped, so padded crop names silently failed to match and skipped correction.
-* **Sort-before-`abs()` bug in `target_correlation`** — correlations were sorted on signed values before taking the absolute value, producing a misleading ranking of feature importance by correlation strength.
+- **Whitespace-ordering bug in `apply_correction`** — the correction mapping ran before crop-name strings were stripped, so padded names silently skipped correction
+- **Sort-before-`abs()` bug in `target_correlation`** — correlations were sorted on signed values before taking the absolute value, misranking feature importance
 
-Both were identified through direct sandbox testing of the pipeline modules and fixed prior to model finalization.
+Both were caught through direct testing of the pipeline modules and fixed before finalizing the model.
 
+---
 
 ## Feature Importance
 
-Feature importance analysis identified several influential predictors.
-
-The most important features included:
+Ranked by model-dependence (not causal influence):
 
 1. Rainfall
 2. Crop type — Tea
@@ -183,213 +129,130 @@ The most important features included:
 8. Crop type — Coffee
 9. Soil type — Loamy
 
-Rainfall was the most influential feature according to the model's feature-importance estimates.
+**Rainfall is the dominant predictor.** A feature ranking high here means the model relies on it — not that changing it would causally move yield.
 
-However, feature importance should be interpreted as **model dependence rather than causal influence**.
+---
 
+## Model Persistence & Deployment
 
-## Project Structure
+The full trained pipeline (preprocessing + estimator) is serialized with `joblib`, so the deployment environment never has to manually recreate feature engineering:
 
-```text
-maji-ndogo-yield-intelligence/
-│
-├── data/
-│
-├── models/
-│
-├── model_pipelines/
-│   ├── __init__.py
-│   ├── ensemble_models.py
-│   ├── tree_pipeline.py
-│
-├── notebooks/
-│   ├── 01_eda.ipynb
-│   ├── 02_baseline_ols.ipynb
-│   ├── 03_regularization.ipynb
-│   ├── 04_polynomial_regression.ipynb
-│   ├── 05_decision_tree.ipynb
-│   ├── 06_random_forest.ipynb
-│   ├── 07_gradient_boosting.ipynb
-│   ├── 08_stacking.ipynb
-│   ├── 09_residual_diagnostics.ipynb
-│   └── 10_feature_importance.ipynb
-│
-├── src/
-│   ├── __init__.py
-│   ├── config.py
-│   ├── data_ingestion.py
-│   ├── logging_config.py
-│   ├── preprocessing.py
-│   ├── field_data_processor.py
-│
-├── tests/
-│
+```
+Raw Input → ColumnTransformer → Gradient Boosting Regressor → Prediction
+```
+
+A reusable inference module (`inference/predict.py`) exposes `load_model()` and `predict()`, and the model is loaded once at startup rather than reloaded per request.
+
+The prediction service is served through **FastAPI**:
+
+```
+GET  /          → health check
+POST /predict   → Standard Yield prediction
+```
+
+**Request** (15 farm-level features, validated via Pydantic):
+
+```json
+{
+  "Elevation": 786.0558,
+  "Latitude": -7.389911,
+  "Longitude": -7.556202,
+  "Location": "Rural_Akatsi",
+  "Slope": 14.795113,
+  "Rainfall": 1125.2,
+  "Min_temperature_C": -3.1,
+  "Max_temperature_C": 33.1,
+  "Ave_temps": 15.0,
+  "Soil_fertility": 0.62,
+  "Soil_type": "Sandy",
+  "pH": 6.169393,
+  "Pollution_level": 0.085267,
+  "Plot_size": 1.3,
+  "Crop_type": "cassava"
+}
+```
+
+**Response:**
+
+```json
+{ "prediction": 0.57372716 }
+```
+
+**Architectur:e** HTTP serving is kept separate from inference logic so the model can be reused outside the API:
+
+```
+Client → api.py (FastAPI, Pydantic, DataFrame)
+       → predict.py (load_model(), predict())
+       → gradient_boosting_pipeline.joblib → Prediction
+```
+
+Currently tested locally via FastAPI's Swagger UI (`/docs`). Containerization and cloud deployment are the next milestones — see [Project Status](#project-status).
+
+---
+
+## Repository Structure
+
+```
+Agricultural-Yield-Intelligence/
+├── config/            # configuration files
+├── gradient_booster/  # final model artifacts / boosting-specific code
+├── inference/         # api.py, predict.py — model serving
+├── model_pipelines/   # ensemble_models.py, tree_pipeline.py
+├── notebooks/         # 01_eda.ipynb → 10_feature_importance.ipynb
+├── reports/           # diagnostics, evaluation outputs
+├── src/               # config.py, data_ingestion.py, preprocessing.py,
+│                       # logging_config.py, field_data_processor.py
+├── .gitignore
+├── LEARNING_LOG.md
 ├── requirements.txt
-│
 └── README.md
 ```
 
-*The structure will evolve as testing, model persistence, and deployment are added.*
-
+---
 
 ## Engineering Practices
 
-The project emphasizes reproducibility and maintainability through:
+- Reusable, modular Python (type hints, logging, config-driven parameters)
+- scikit-learn `Pipeline` + `ColumnTransformer` for coupled preprocessing/modeling
+- Git version control with a running `LEARNING_LOG.md`
+- Model persistence via `joblib`
+- FastAPI + Pydantic for validated model serving
+- Hyperparameter tuning, residual diagnostics, and feature-importance interpretation as standard steps, not afterthoughts
 
-* Reusable Python modules
-* Scikit-learn pipelines
-* Separation of preprocessing and modeling
-* Configurable model parameters
-* Logging
-* Git version control
-* Hyperparameter tuning
-* Model diagnostics
-* Model persistence
-
-Unit testing is planned but not yet implemented — see Project Status below.
-
-
-## Model Persistence
-
-The final trained pipeline will be serialized using `joblib`.
-
-The entire pipeline will be saved rather than only the estimator so that preprocessing and prediction remain coupled.
-
-```text
-Raw Input
-   ↓
-Preprocessing
-   ↓
-Gradient Boosting Model
-   ↓
-Prediction
-```
-
-This allows the saved artifact to be loaded later without rebuilding the preprocessing workflow manually.
-
-
-## Deployment
-
-The next stage of the project is to expose the trained model through an API.
-
-The planned architecture is:
-
-```text
-Client
-  │
-  ▼
-FastAPI
-  │
-  ▼
-Saved ML Pipeline
-  │
-  ▼
-Standard Yield Prediction
-```
-
-Deployment technologies will include:
-
-* FastAPI
-* Pydantic
-* pytest
-* Docker
-* Cloud deployment
-
-
-## Key Findings
-
-The project produced several important findings:
-
-1. Standard Yield contains substantial nonlinear relationships with the available predictors.
-2. Polynomial regression improved upon the initial linear models but remained inferior to tree-based approaches.
-3. Decision trees captured nonlinear relationships effectively but required complexity control.
-4. Ensemble methods substantially improved predictive performance.
-5. Gradient Boosting produced the strongest individual predictive performance.
-6. Stacking did not outperform the tuned Gradient Boosting model.
-7. Residual diagnostics showed very little overall bias.
-8. Some crop types and extreme observations produced larger prediction errors.
-9. Rainfall, crop type, pH, latitude, pollution, and elevation were among the most influential predictors.
-10. High predictive performance does not eliminate the need for residual diagnostics and model interpretation.
-
-
-## What I Learned
-
-This project developed skills across several areas:
-
-### Data Science
-
-* Exploratory data analysis
-* Statistical testing
-* Regression
-* Model evaluation
-* Cross-validation
-* Hyperparameter tuning
-* Residual diagnostics
-* Model interpretation
-
-### Machine Learning
-
-* Linear models
-* Regularization
-* Polynomial regression
-* Decision trees
-* Random forests
-* Gradient boosting
-* Stacking
-* Ensemble learning
-
-### Python
-
-* Object-oriented programming
-* Modules and packages
-* Reusable functions
-* Classes
-* Scikit-learn pipelines
-* Logging
-* Testing
-* Project structure
-
-### Software Engineering
-
-* Git and GitHub
-* Branching and merging
-* Conflict resolution
-* Modular architecture
-* Reproducibility
-* Model persistence
-
+---
 
 ## Project Status
 
-**Current stage: Testing, model finalization, and deployment preparation**
+**Current stage:** local API serving and deployment engineering
 
-Completed:
+**Done**
+- [x] Data processing, EDA, feature analysis
+- [x] Full model comparison (linear → ensemble)
+- [x] Hyperparameter tuning, residual diagnostics, feature importance
+- [x] Pipeline persistence and reusable inference module
+- [x] Local FastAPI prediction API with Pydantic validation
+- [x] Verified end-to-end local prediction
 
-* [x] Data processing
-* [x] Exploratory data analysis
-* [x] Baseline regression
-* [x] Regularization
-* [x] Polynomial regression
-* [x] Decision tree
-* [x] Random forest
-* [x] Gradient boosting
-* [x] Stacking
-* [x] Hyperparameter tuning
-* [x] Model comparison
-* [x] Residual diagnostics
-* [x] Feature importance
-* [x] Pipeline modularization
+---
 
-In progress:
+## Key Findings
 
-* [ ] Add unit tests for `src/` modules
-* [ ] Save final Gradient Boosting pipeline
-* [ ] Validate serialized model
-* [ ] Build prediction API
-* [ ] Add API tests
-* [ ] Containerize application
-* [ ] Deploy model
-* [ ] Add basic monitoring
+1. Standard Yield has substantial nonlinear relationships with its predictors.
+2. Polynomial regression beat linear baselines but lost to every tree-based model.
+3. Ensemble methods delivered the biggest performance jump.
+4. Tuned Gradient Boosting outperformed even the stacked ensemble.
+5. Residual bias is negligible on average, though some crop types and extreme cases still show larger errors.
+6. Rainfall, crop type, pH, latitude, pollution, and elevation are the top drivers.
+7. A high R² is a starting point, not a finish line — diagnostics and interpretation still matter.
 
+---
 
-This project represents an ongoing transition from data science toward machine learning engineering, combining statistical analysis, machine learning, Python programming, software engineering, and deployment.
+## What This Project Taught Me
+
+- **Data science:** EDA, statistical testing, regression, cross-validation, hyperparameter tuning, residual diagnostics, model interpretation
+- **Machine learning:** linear models through gradient boosting and stacking, preprocessing pipelines, model persistence, single vs. batch inference
+- **Python & software engineering:** OOP, modular packages, type hints, logging, Git workflows, REST APIs, Pydantic validation, FastAPI model serving
+
+---
+
+*This project is an ongoing transition from data science experimentation into machine learning engineering. The goal isn't just a high-performing model, but understanding every layer of how it becomes a usable service.*
