@@ -84,7 +84,7 @@ class GradientBooster:
         return self.boosting_param
 
     def hyperparameter_search(self) -> RandomizedSearchCV:
-        "Builds but does not yet fit the randomized search"
+        "Builds (but does not yet fit) the randomized search"
         if self.gradient_pipeline is None:
             raise RuntimeError("Call boosting_pipeline() before hyperparameter_search().")
         if self.boosting_param is None:
@@ -100,7 +100,7 @@ class GradientBooster:
         )
 
 
-    def train(self) -> Pipeline:
+    def train(self):
         """
         Runs the full pipeline end-to-end: load data, split, build the
         transformer + model pipeline, search hyperparameters, fit, and
@@ -108,10 +108,8 @@ class GradientBooster:
 
         Returns the fitted best-performing Pipeline.
         """
-        self.logger.info("Starting model training run")
+        self.logger.info("Starting training run")
 
-        if self.X_train is None:
-            raise RuntimeError("Run feature_split() first")
         self.load_data()
         self.features_split()
         self.boosting_transformer()
@@ -119,10 +117,11 @@ class GradientBooster:
         self.gradient_boosting_params()
         random_search = self.hyperparameter_search()
 
-        self.logger.info("Fitting RandomizedSearchCV (this may take a while to complete)")
-
+        self.logger.info("Fitting RandomizedSearchCV (this may take a while)")
+        if self.X_train is None or self.y_train is None:
+            self.X_train, _, self.y_train, _ = self.mp.X_y_train_test_split()
         self.fitted_search = random_search.fit(self.X_train, self.y_train)
-
+     
         self.best_model = cast(Pipeline, self.fitted_search.best_estimator_)
 
         self.logger.info(
@@ -131,6 +130,9 @@ class GradientBooster:
         )
         return self.best_model
 
+    # ------------------------------------------------------------------ #
+    # Evaluation
+    # ------------------------------------------------------------------ #
 
     def evaluate(self) -> dict:
         """
@@ -145,10 +147,13 @@ class GradientBooster:
         r2 = r2_score(self.y_test, y_pred)
 
         self.logger.info("Test RMSE: %.4f | Test R2: %.4f", rmse, r2)
-        return {"rmse": rmse, "r2 score": r2}
+        return {"rmse": rmse, "r2": r2}
 
+    # ------------------------------------------------------------------ #
+    # Persistence
+    # ------------------------------------------------------------------ #
 
-    def save_model(self, path: str = "models/gradient_boosting_pipeline.joblib") -> str:
+    def save(self, path: str = "models/gradient_boosting_pipeline.joblib") -> str:
         """
         Saves the fitted best_model pipeline to disk with joblib.
         Must be called after train().
@@ -167,7 +172,7 @@ if __name__ == "__main__":
     booster = GradientBooster()
     booster.train()
     metrics = booster.evaluate()
-    booster.save_model()
+    booster.save()
 
     print(f"Test RMSE: {metrics['rmse']:.4f}")
     print(f"Test R2:   {metrics['r2']:.4f}")
