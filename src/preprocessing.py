@@ -43,6 +43,8 @@ class ModelPreprocessors:
         return self.X, self.y
     
     def X_y_train_test_split(self) -> tuple:
+        if self.X is None or self.y is None:
+            raise RuntimeError("Call X_y_features() before X_y_train_test_split().")
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.X, self.y, test_size=0.2, random_state=42
         )
